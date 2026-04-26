@@ -4,25 +4,25 @@ const jwt = require('jsonwebtoken');
 
 // Cadastrar usuário
 const cadastrar = async (req, res) => {
-  const { nome, email, senha, cargo } = req.body;
+  const { nome, email, senha, cargo, telefone } = req.body;
+  console.log('[cadastrar] body recebido:', { nome, email, cargo, telefone, senha: senha ? '***' : undefined });
 
   try {
-    // Verifica se email já existe
     const existe = await prisma.usuario.findUnique({ where: { email } });
     if (existe) {
       return res.status(400).json({ erro: 'Email já cadastrado' });
     }
 
-    // Criptografa a senha
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
-    // Cria o usuário
     const usuario = await prisma.usuario.create({
-      data: { nome, email, senha: senhaCriptografada, cargo }
+      data: { nome, email, senha: senhaCriptografada, cargo, telefone: telefone || null }
     });
 
+    console.log('[cadastrar] usuário criado:', { id: usuario.id, nome: usuario.nome, telefone: usuario.telefone });
     res.status(201).json({ mensagem: 'Usuário criado com sucesso!', id: usuario.id });
   } catch (erro) {
+    console.error('[cadastrar] erro:', erro);
     res.status(500).json({ erro: 'Erro ao cadastrar usuário' });
   }
 };
@@ -32,31 +32,60 @@ const login = async (req, res) => {
   const { email, senha } = req.body;
 
   try {
-    // Busca o usuário
     const usuario = await prisma.usuario.findUnique({ where: { email } });
     if (!usuario) {
       return res.status(400).json({ erro: 'Email ou senha incorretos' });
     }
 
-    // Verifica a senha
     const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
     if (!senhaCorreta) {
       return res.status(400).json({ erro: 'Email ou senha incorretos' });
     }
 
-   // Gera o token
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-const token = jwt.sign(
-    { id: usuario.id, cargo: usuario.cargo },
-    process.env.JWT_SECRET,
-    { expiresIn: '8h' }
-  );
+    const token = jwt.sign(
+      { id: usuario.id, cargo: usuario.cargo },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.json({ token, nome: usuario.nome, cargo: usuario.cargo });
-} catch (erro) {
-  console.error(erro);
-  res.status(500).json({ erro: 'Erro ao fazer login', detalhe: erro.message });
-}
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ erro: 'Erro ao fazer login', detalhe: erro.message });
+  }
 };
 
-module.exports = { cadastrar, login };
+// Listar todos os usuários (sem expor senha)
+const listar = async (req, res) => {
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      where: { ativo: true },
+      orderBy: { criadoEm: 'desc' },
+      select: { id: true, nome: true, email: true, cargo: true, telefone: true, ativo: true, criadoEm: true },
+    });
+    console.log('[listar] retornando', usuarios.length, 'usuários, primeiro:', usuarios[0] ?? null);
+    res.json(usuarios);
+  } catch (erro) {
+    console.error('[listar] erro:', erro);
+    res.status(500).json({ erro: 'Erro ao listar usuários' });
+  }
+};
+
+// Excluir usuário (soft delete)
+const excluir = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const existe = await prisma.usuario.findUnique({ where: { id: Number(id) } });
+    if (!existe) return res.status(404).json({ erro: 'Usuário não encontrado' });
+
+    await prisma.usuario.update({
+      where: { id: Number(id) },
+      data: { ativo: false },
+    });
+    res.json({ mensagem: 'Usuário removido com sucesso' });
+  } catch (erro) {
+    res.status(500).json({ erro: 'Erro ao excluir usuário' });
+  }
+};
+
+module.exports = { cadastrar, login, listar, excluir };

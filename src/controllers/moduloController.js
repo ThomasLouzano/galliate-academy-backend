@@ -1,14 +1,21 @@
 const prisma = require('../prisma');
 
-// Listar todos os módulos
+// Listar módulos (suporta ?trilhaId=X para filtrar)
 const listar = async (req, res) => {
+  const { trilhaId } = req.query;
+  console.log('[moduloController.listar] trilhaId recebido:', trilhaId, '| tipo:', typeof trilhaId);
   try {
+    const where = { ativo: true };
+    if (trilhaId) where.trilhaId = Number(trilhaId);
+    console.log('[moduloController.listar] where:', JSON.stringify(where));
     const modulos = await prisma.modulo.findMany({
-      where: { ativo: true },
-      orderBy: { criadoEm: 'desc' }
+      where,
+      orderBy: { criadoEm: 'desc' },
     });
+    console.log('[moduloController.listar] módulos retornados:', modulos.length, modulos.map(m => ({ id: m.id, titulo: m.titulo, trilhaId: m.trilhaId })));
     res.json(modulos);
   } catch (erro) {
+    console.error('[moduloController.listar] erro:', erro);
     res.status(500).json({ erro: 'Erro ao listar módulos' });
   }
 };
@@ -31,10 +38,10 @@ const buscarPorId = async (req, res) => {
 
 // Criar módulo
 const criar = async (req, res) => {
-  const { titulo, descricao } = req.body;
+  const { titulo, descricao, trilhaId } = req.body;
   try {
     const modulo = await prisma.modulo.create({
-      data: { titulo, descricao }
+      data: { titulo, descricao, trilhaId: trilhaId ? Number(trilhaId) : null },
     });
     res.status(201).json({ mensagem: 'Módulo criado com sucesso!', modulo });
   } catch (erro) {

@@ -13,8 +13,19 @@ model Usuario {
   email     String   @unique
   senha     String
   cargo     String
+  telefone  String?
   ativo     Boolean  @default(true)
   criadoEm DateTime @default(now())
+}
+
+model Trilha {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  descricao String?
+  icone     String   @default("📋")
+  ordem     Int      @default(0)
+  criadoEm DateTime @default(now())
+  modulos   Modulo[]
 }
 
 model Modulo {
@@ -22,7 +33,33 @@ model Modulo {
   titulo    String
   descricao String?
   ativo     Boolean  @default(true)
+  trilhaId  Int?
+  trilha    Trilha?  @relation(fields: [trilhaId], references: [id], onDelete: SetNull)
   criadoEm DateTime @default(now())
+  secoes    Secao[]
+}
+
+model Secao {
+  id        Int      @id @default(autoincrement())
+  titulo    String
+  ordem     Int      @default(0)
+  moduloId  Int
+  modulo    Modulo   @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+  aulas     Aula[]
+  criadoEm DateTime  @default(now())
+}
+
+model Aula {
+  id        Int      @id @default(autoincrement())
+  titulo    String
+  descricao String?
+  videoUrl  String?
+  ordem     Int      @default(0)
+  duracao   String?
+  checklist String?
+  secaoId   Int
+  secao     Secao    @relation(fields: [secaoId], references: [id], onDelete: Cascade)
+  criadoEm DateTime  @default(now())
 }
 
 model Progresso {

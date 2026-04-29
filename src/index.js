@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const usuarioRoutes = require('./routes/usuarioRoutes');
+const authRoutes = require('./routes/authRoutes');
 const moduloRoutes = require('./routes/moduloRoutes');
 const progressoRoutes = require('./routes/progressoRoutes');
 const secaoRoutes = require('./routes/secaoRoutes');
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Rotas
+app.use('/auth', authRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/modulos', moduloRoutes);
 app.use('/progresso', progressoRoutes);

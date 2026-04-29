@@ -29,7 +29,7 @@ const buscarPorId = async (req, res) => {
 
 // Criar aula (POST /aulas)
 const criar = async (req, res) => {
-  const { titulo, descricao, videoUrl, ordem, duracao, checklist, secaoId } = req.body;
+  const { titulo, descricao, videoUrl, ordem, duracao, checklist, secaoId, apostilaUrl, xp } = req.body;
   if (!titulo || !secaoId) return res.status(400).json({ erro: 'titulo e secaoId são obrigatórios' });
   try {
     const aula = await prisma.aula.create({
@@ -39,6 +39,8 @@ const criar = async (req, res) => {
         videoUrl: videoUrl || null,
         duracao: duracao || null,
         checklist: checklist || null,
+        apostilaUrl: apostilaUrl || null,
+        xp: xp ?? 10,
         ordem: ordem ?? 0,
         secaoId: Number(secaoId),
       },
@@ -52,15 +54,31 @@ const criar = async (req, res) => {
 // Atualizar aula (PUT /aulas/:id)
 const atualizar = async (req, res) => {
   const { id } = req.params;
-  const { titulo, descricao, videoUrl, ordem, duracao, checklist } = req.body;
+  const { titulo, descricao, videoUrl, ordem, duracao, checklist, apostilaUrl, xp } = req.body;
   try {
     const aula = await prisma.aula.update({
       where: { id: Number(id) },
-      data: { titulo, descricao, videoUrl, ordem, duracao, checklist },
+      data: { titulo, descricao, videoUrl, ordem, duracao, checklist, apostilaUrl, ...(xp !== undefined ? { xp: Number(xp) } : {}) },
     });
     res.json({ mensagem: 'Aula atualizada com sucesso!', aula });
   } catch (erro) {
     res.status(500).json({ erro: 'Erro ao atualizar aula' });
+  }
+};
+
+// Upload de apostila (POST /aulas/:id/apostila)
+const uploadApostila = async (req, res) => {
+  const { id } = req.params;
+  if (!req.file) return res.status(400).json({ erro: 'Nenhum arquivo enviado' });
+  try {
+    const apostilaUrl = `${req.protocol}://${req.get('host')}/uploads/apostilas/${req.file.filename}`;
+    const aula = await prisma.aula.update({
+      where: { id: Number(id) },
+      data: { apostilaUrl },
+    });
+    res.json({ apostilaUrl, aula });
+  } catch (erro) {
+    res.status(500).json({ erro: 'Erro ao salvar apostila' });
   }
 };
 
@@ -77,4 +95,4 @@ const excluir = async (req, res) => {
   }
 };
 
-module.exports = { listar, buscarPorId, criar, atualizar, excluir };
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, uploadApostila };

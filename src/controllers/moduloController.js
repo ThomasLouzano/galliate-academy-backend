@@ -38,10 +38,10 @@ const buscarPorId = async (req, res) => {
 
 // Criar módulo
 const criar = async (req, res) => {
-  const { titulo, descricao, trilhaId } = req.body;
+  const { titulo, descricao, trilhaId, xpBonus } = req.body;
   try {
     const modulo = await prisma.modulo.create({
-      data: { titulo, descricao, trilhaId: trilhaId ? Number(trilhaId) : null },
+      data: { titulo, descricao, trilhaId: trilhaId ? Number(trilhaId) : null, xpBonus: xpBonus ?? 50 },
     });
     res.status(201).json({ mensagem: 'Módulo criado com sucesso!', modulo });
   } catch (erro) {
@@ -52,11 +52,17 @@ const criar = async (req, res) => {
 // Atualizar módulo
 const atualizar = async (req, res) => {
   const { id } = req.params;
-  const { titulo, descricao, ativo } = req.body;
+  const { titulo, descricao, ativo, trilhaId, xpBonus } = req.body;
   try {
     const modulo = await prisma.modulo.update({
       where: { id: Number(id) },
-      data: { titulo, descricao, ativo }
+      data: {
+        titulo,
+        descricao,
+        ativo,
+        ...(trilhaId !== undefined ? { trilhaId: trilhaId ? Number(trilhaId) : null } : {}),
+        ...(xpBonus !== undefined ? { xpBonus: Number(xpBonus) } : {}),
+      },
     });
     res.json({ mensagem: 'Módulo atualizado com sucesso!', modulo });
   } catch (erro) {
@@ -64,4 +70,17 @@ const atualizar = async (req, res) => {
   }
 };
 
-module.exports = { listar, buscarPorId, criar, atualizar };
+// Excluir módulo
+const excluir = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const existe = await prisma.modulo.findUnique({ where: { id: Number(id) } });
+    if (!existe) return res.status(404).json({ erro: 'Módulo não encontrado' });
+    await prisma.modulo.delete({ where: { id: Number(id) } });
+    res.json({ mensagem: 'Módulo excluído com sucesso' });
+  } catch (erro) {
+    res.status(500).json({ erro: 'Erro ao excluir módulo' });
+  }
+};
+
+module.exports = { listar, buscarPorId, criar, atualizar, excluir };

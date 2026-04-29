@@ -48,7 +48,7 @@ const login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, nome: usuario.nome, cargo: usuario.cargo });
+    res.json({ token, id: usuario.id, nome: usuario.nome, cargo: usuario.cargo, xp: usuario.xp });
   } catch (erro) {
     console.error(erro);
     res.status(500).json({ erro: 'Erro ao fazer login', detalhe: erro.message });
@@ -61,7 +61,7 @@ const listar = async (req, res) => {
     const usuarios = await prisma.usuario.findMany({
       where: { ativo: true },
       orderBy: { criadoEm: 'desc' },
-      select: { id: true, nome: true, email: true, cargo: true, telefone: true, ativo: true, criadoEm: true },
+      select: { id: true, nome: true, email: true, cargo: true, telefone: true, ativo: true, xp: true, criadoEm: true },
     });
     console.log('[listar] retornando', usuarios.length, 'usuários, primeiro:', usuarios[0] ?? null);
     res.json(usuarios);
@@ -88,4 +88,20 @@ const excluir = async (req, res) => {
   }
 };
 
-module.exports = { cadastrar, login, listar, excluir };
+// Adicionar XP ao usuário (POST /usuarios/:id/xp)
+const adicionarXP = async (req, res) => {
+  const { id } = req.params;
+  const { ganho } = req.body;
+  if (!ganho || Number(ganho) <= 0) return res.status(400).json({ erro: 'Ganho de XP inválido' });
+  try {
+    const usuario = await prisma.usuario.update({
+      where: { id: Number(id) },
+      data: { xp: { increment: Number(ganho) } },
+    });
+    res.json({ xp: usuario.xp });
+  } catch (erro) {
+    res.status(500).json({ erro: 'Erro ao atualizar XP' });
+  }
+};
+
+module.exports = { cadastrar, login, listar, excluir, adicionarXP };

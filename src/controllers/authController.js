@@ -1,20 +1,9 @@
 const prisma = require('../prisma');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -40,23 +29,11 @@ const forgotPassword = async (req, res) => {
     const link = `https://galliate-academy.netlify.app/reset-password?token=${token}`;
 
     console.log('[forgotPassword] tentando enviar email para:', email);
-    await transporter.sendMail({
-      from: `"Galliate Academy" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: 'Galliate Academy <onboarding@resend.dev>',
       to: email,
-      subject: 'Redefinição de senha — Galliate Academy',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #0D0D0D; color: #F0F0F0; padding: 32px; border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 900; color: #F9A800; margin-bottom: 8px;">GALLIATE ACADEMY</div>
-          <p style="color: #888; margin-bottom: 24px;">Recebemos uma solicitação para redefinir sua senha.</p>
-          <a href="${link}" style="display: inline-block; background: #F9A800; color: #000; font-weight: 900; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 15px;">
-            REDEFINIR SENHA
-          </a>
-          <p style="color: #555; font-size: 12px; margin-top: 24px;">
-            Este link expira em 1 hora. Se você não solicitou a redefinição, ignore este email.
-          </p>
-          <p style="color: #333; font-size: 11px;">Ou acesse: <a href="${link}" style="color: #F9A800;">${link}</a></p>
-        </div>
-      `,
+      subject: 'Redefinição de senha - Galliate Academy',
+      html: `<p>Clique no link para redefinir sua senha: <a href="${link}">${link}</a></p>`,
     });
 
     console.log('[forgotPassword] email enviado com sucesso para:', email);

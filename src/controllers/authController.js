@@ -13,12 +13,16 @@ const transporter = nodemailer.createTransport({
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
+  console.log('[forgotPassword] email recebido:', email);
   if (!email) return res.status(400).json({ erro: 'Email é obrigatório' });
 
   try {
     const usuario = await prisma.usuario.findUnique({ where: { email } });
     // Resposta genérica para não expor se o email existe
-    if (!usuario) return res.json({ mensagem: 'Se o email estiver cadastrado, você receberá um link em breve.' });
+    if (!usuario) {
+      console.log('[forgotPassword] email não encontrado no banco, retornando resposta genérica');
+      return res.json({ mensagem: 'Se o email estiver cadastrado, você receberá um link em breve.' });
+    }
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiracao = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
@@ -30,6 +34,7 @@ const forgotPassword = async (req, res) => {
 
     const link = `https://galliate-academy.netlify.app/reset-password?token=${token}`;
 
+    console.log('[forgotPassword] tentando enviar email para:', email);
     await transporter.sendMail({
       from: `"Galliate Academy" <${process.env.GMAIL_USER}>`,
       to: email,
@@ -49,9 +54,10 @@ const forgotPassword = async (req, res) => {
       `,
     });
 
+    console.log('[forgotPassword] email enviado com sucesso para:', email);
     res.json({ mensagem: 'Se o email estiver cadastrado, você receberá um link em breve.' });
   } catch (erro) {
-    console.error('[forgotPassword] erro:', erro);
+    console.error('[forgotPassword] erro ao enviar email:', erro);
     res.status(500).json({ erro: 'Erro ao processar solicitação' });
   }
 };

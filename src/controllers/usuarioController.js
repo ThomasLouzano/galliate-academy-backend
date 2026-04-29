@@ -48,7 +48,7 @@ const login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, id: usuario.id, nome: usuario.nome, cargo: usuario.cargo, xp: usuario.xp });
+    res.json({ token, id: usuario.id, nome: usuario.nome, cargo: usuario.cargo, xp: usuario.xp, fotoUrl: usuario.fotoUrl ?? null });
   } catch (erro) {
     console.error(erro);
     res.status(500).json({ erro: 'Erro ao fazer login', detalhe: erro.message });
@@ -61,7 +61,7 @@ const listar = async (req, res) => {
     const usuarios = await prisma.usuario.findMany({
       where: { ativo: true },
       orderBy: { criadoEm: 'desc' },
-      select: { id: true, nome: true, email: true, cargo: true, telefone: true, ativo: true, xp: true, criadoEm: true },
+      select: { id: true, nome: true, email: true, cargo: true, telefone: true, ativo: true, xp: true, fotoUrl: true, criadoEm: true },
     });
     console.log('[listar] retornando', usuarios.length, 'usuários, primeiro:', usuarios[0] ?? null);
     res.json(usuarios);
@@ -134,4 +134,21 @@ const atualizar = async (req, res) => {
   }
 };
 
-module.exports = { cadastrar, login, listar, excluir, adicionarXP, atualizar };
+// Upload de foto de perfil (POST /usuarios/:id/foto)
+const uploadFoto = async (req, res) => {
+  const { id } = req.params;
+  if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
+  try {
+    const fotoUrl = `/uploads/fotos/${req.file.filename}`;
+    await prisma.usuario.update({
+      where: { id: Number(id) },
+      data: { fotoUrl },
+    });
+    res.json({ fotoUrl });
+  } catch (erro) {
+    console.error('[uploadFoto] erro:', erro);
+    res.status(500).json({ erro: 'Erro ao salvar foto' });
+  }
+};
+
+module.exports = { cadastrar, login, listar, excluir, adicionarXP, atualizar, uploadFoto };

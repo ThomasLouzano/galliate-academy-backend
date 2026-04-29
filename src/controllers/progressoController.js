@@ -6,9 +6,23 @@ const listar = async (req, res) => {
   if (!usuarioId) return res.status(400).json({ erro: 'usuarioId é obrigatório' });
   try {
     const progressos = await prisma.progresso.findMany({
-      where: { usuarioId: Number(usuarioId) },
+      where: { usuarioId: Number(usuarioId), concluida: true },
+      orderBy: { concluidoEm: 'desc' },
     });
-    res.json(progressos);
+
+    const aulaIds = progressos.map(p => p.aulaId).filter(Boolean);
+    const aulas = await prisma.aula.findMany({
+      where: { id: { in: aulaIds } },
+      select: { id: true, titulo: true },
+    });
+    const aulaMap = Object.fromEntries(aulas.map(a => [a.id, a.titulo]));
+
+    const resultado = progressos.map(p => ({
+      ...p,
+      tituloAula: p.aulaId ? (aulaMap[p.aulaId] ?? `Aula #${p.aulaId}`) : null,
+    }));
+
+    res.json(resultado);
   } catch (e) {
     console.error('[progressoController.listar]', e);
     res.status(500).json({ erro: 'Erro ao listar progresso' });

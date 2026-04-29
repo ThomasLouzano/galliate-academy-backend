@@ -19,6 +19,7 @@ model Usuario {
   criadoEm      DateTime  @default(now())
   resetToken     String?
   resetTokenExp  DateTime?
+  fotoUrl        String?
 }
 
 model Trilha {

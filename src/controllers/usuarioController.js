@@ -104,4 +104,34 @@ const adicionarXP = async (req, res) => {
   }
 };
 
-module.exports = { cadastrar, login, listar, excluir, adicionarXP };
+// Atualizar nome, cargo e/ou senha
+const atualizar = async (req, res) => {
+  const { id } = req.params;
+  const { nome, cargo, senha } = req.body;
+
+  try {
+    const existe = await prisma.usuario.findUnique({ where: { id: Number(id) } });
+    if (!existe) return res.status(404).json({ erro: 'Usuário não encontrado' });
+
+    const data = {};
+    if (nome !== undefined) data.nome = nome;
+    if (cargo !== undefined) data.cargo = cargo;
+    if (senha) data.senha = await bcrypt.hash(senha, 10);
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ erro: 'Nenhum campo para atualizar' });
+    }
+
+    const usuario = await prisma.usuario.update({
+      where: { id: Number(id) },
+      data,
+    });
+
+    res.json({ mensagem: 'Usuário atualizado com sucesso', id: usuario.id });
+  } catch (erro) {
+    console.error('[atualizar] erro:', erro);
+    res.status(500).json({ erro: 'Erro ao atualizar usuário' });
+  }
+};
+
+module.exports = { cadastrar, login, listar, excluir, adicionarXP, atualizar };

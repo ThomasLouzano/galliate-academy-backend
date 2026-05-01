@@ -32,4 +32,36 @@ const atualizarItem = async (req, res) => {
   }
 };
 
-module.exports = { atualizarItem };
+const removerItem = async (req, res) => {
+  const { aulaId } = req.params;
+  const { index } = req.body;
+
+  if (typeof index !== 'number') {
+    return res.status(400).json({ erro: 'index é obrigatório' });
+  }
+
+  try {
+    const aula = await prisma.aula.findUnique({ where: { id: Number(aulaId) } });
+    if (!aula) return res.status(404).json({ erro: 'Aula não encontrada' });
+
+    let items = [];
+    try { items = aula.checklist ? JSON.parse(aula.checklist) : []; } catch { items = []; }
+
+    if (index < 0 || index >= items.length) {
+      return res.status(400).json({ erro: 'Índice inválido' });
+    }
+
+    items.splice(index, 1);
+
+    await prisma.aula.update({
+      where: { id: Number(aulaId) },
+      data: { checklist: items.length ? JSON.stringify(items) : null },
+    });
+
+    res.json({ checklist: items });
+  } catch (e) {
+    res.status(500).json({ erro: e.message });
+  }
+};
+
+module.exports = { atualizarItem, removerItem };

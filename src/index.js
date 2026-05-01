@@ -13,6 +13,7 @@ const trilhaRoutes = require('./routes/trilhaRoutes');
 const avaliacaoRoutes = require('./routes/avaliacaoRoutes');
 const questaoRoutes = require('./routes/questaoRoutes');
 const certificadoRoutes = require('./routes/certificadoRoutes');
+const checklistRoutes = require('./routes/checklistRoutes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/trilhas', trilhaRoutes);
 app.use('/avaliacoes', avaliacaoRoutes);
 app.use('/questoes', questaoRoutes);
 app.use('/certificados', certificadoRoutes);
+app.use('/checklists', checklistRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
